@@ -6,16 +6,18 @@ from gensim.models import KeyedVectors
 from keras import Input, Model, metrics, regularizers
 from keras.callbacks import EarlyStopping
 from keras.layers import Embedding, Reshape, Conv2D, MaxPooling2D, concatenate, Flatten, Dropout, Dense
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from keras.utils import to_categorical
+import tensorflow as tf
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 from evaluation.classifier_eval import full_evaluation
+from models.lstm_text_classification import MAX_NB_WORDS
 from utils.constants import EMBEDDINGS_LEN
 from utils.data_utils import split_train_test
 
@@ -66,8 +68,8 @@ def cnn_training(train_data, test_data, embeddings_path):
     embedding_layer = Embedding(vocabulary_size, EMBEDDINGS_LEN, weights=[embedding_matrix], trainable=True)
 
     sequence_length = x_train.shape[1]
-    filter_sizes = [1, 2, 3, 4, 5]
-    num_filters = 500
+    filter_sizes = [2, 3, 4, 5]
+    num_filters = 10
     drop = 0.5
 
     inputs = Input(shape=(sequence_length,))
@@ -99,7 +101,8 @@ def cnn_training(train_data, test_data, embeddings_path):
     # this creates a model that includes
     model = Model(inputs, output)
 
-    opt = Adam(lr=1e-3)
+    opt = SGD(lr=1e-3)
+    #opt = Adam(lr=1e-3)
     model.compile(loss='binary_crossentropy', optimizer=opt,
                   metrics=[metrics.binary_crossentropy, metrics.mae, metrics.categorical_accuracy])
 
@@ -124,3 +127,87 @@ def cnn_training(train_data, test_data, embeddings_path):
     y_pred = model.predict(x_test)
     y_pred = [np.argmax(y) for y in y_pred]
     full_evaluation(y_test, y_pred)
+
+
+def cnn_model(input_length, embedding_matrix):
+    tf.keras.backend.clear_session()
+    embedding_layer = Embedding(MAX_NB_WORDS, EMBEDDINGS_LEN, weights=[embedding_matrix], trainable=True)
+
+    sequence_length = input_length
+    filter_sizes = [2, 3, 4, 5]
+    num_filters = 10
+    drop = 0.5
+
+    inputs = Input(shape=(sequence_length,))
+    embedding = embedding_layer(inputs)
+    reshape = Reshape((sequence_length, EMBEDDINGS_LEN, 1))(embedding)
+
+    convs = []
+    maxpools = []
+
+    for filter_size in filter_sizes:
+        conv = Conv2D(num_filters, (filter_size, EMBEDDINGS_LEN), activation='relu',
+                      kernel_regularizer=regularizers.l2(0.01))(reshape)
+
+        maxpool = MaxPooling2D(
+            (sequence_length - filter_size + 1, 1), strides=(1, 1))(conv)
+
+        maxpools.append(maxpool)
+        convs.append(conv)
+
+    merged_tensor = concatenate(maxpools, axis=1)
+
+    flatten = Flatten()(merged_tensor)
+    # reshape = Reshape((3 * num_filters,))(flatten)
+    dropout = Dropout(drop)(flatten)
+    # conc = Dense(40)(dropout)
+    output = Dense(4, activation='sigmoid',
+                   kernel_regularizer=regularizers.l2(0.01))(dropout)
+
+    # this creates a model that includes
+    model = Model(inputs, output)
+
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[metrics.categorical_accuracy])
+    # embedding_layer = Embedding(MAX_NB_WORDS, EMBEDDINGS_LEN, weights=[embedding_matrix], trainable=True)
+    #
+    # sequence_length = input_length
+    # filter_sizes = [1, 2, 3, 4, 5]
+    # num_filters = 100
+    # drop = 0.5
+    #
+    # inputs = Input(shape=(sequence_length,))
+    # embedding = embedding_layer(inputs)
+    # reshape = Reshape((sequence_length, EMBEDDINGS_LEN, 1))(embedding)
+    #
+    # convs = []
+    # maxpools = []
+    #
+    # for filter_size in filter_sizes:
+    #     conv = Conv2D(num_filters, (filter_size, EMBEDDINGS_LEN), activation='relu',
+    #                   kernel_regularizer=regularizers.l2(0.01))(reshape)
+    #
+    #     maxpool = MaxPooling2D(
+    #         (sequence_length - filter_size + 1, 1), strides=(1, 1))(conv)
+    #
+    #     maxpools.append(maxpool)
+    #     convs.append(conv)
+    #
+    # merged_tensor = concatenate(maxpools, axis=1)
+    #
+    # flatten = Flatten()(merged_tensor)
+    # # reshape = Reshape((3 * num_filters,))(flatten)
+    # dropout = Dropout(drop)(flatten)
+    # conc = Dense(40)(dropout)
+    # output = Dense(4, activation='sigmoid',
+    #                kernel_regularizer=regularizers.l2(0.01))(conc)
+    #
+    # # this creates a model that includes
+    # model = Model(inputs, output)
+    #
+    # opt = SGD(lr=1e-3)
+    # model.compile(loss='binary_crossentropy', optimizer=opt,
+    #               metrics=[metrics.binary_crossentropy, metrics.mae, metrics.categorical_accuracy])
+
+    # callbacks = [EarlyStopping(monitor='val_loss')]
+
+    return model

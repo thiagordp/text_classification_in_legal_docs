@@ -2,20 +2,25 @@
 
 @author Thiago
 """
+import logging
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import tensorflow as tf
 from gensim.models import KeyedVectors
+from keras import Input, Model, metrics, regularizers
 from keras import Sequential
-from keras.callbacks import EarlyStopping
-from keras.layers import Embedding, SpatialDropout1D, LSTM, Dense
-from keras.utils import to_categorical
+from keras.layers import Embedding, SpatialDropout1D, LSTM, Dense, Conv2D, MaxPooling2D, concatenate, Bidirectional
 from keras_preprocessing.sequence import pad_sequences
 from keras_preprocessing.text import Tokenizer
+from keras_self_attention import SeqSelfAttention
+from tensorflow.python.keras.layers import Reshape
+from attention import Attention
 
 from evaluation.classifier_eval import full_evaluation
+from utils.constants import EMBEDDINGS_LEN
 from utils.data_utils import split_train_test
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 
 MAX_NB_WORDS = 12000
 MAX_LEN_SEQ = 400
@@ -86,3 +91,73 @@ def lstm_training(train_data, test_data, path_emb):
     y_pred = model.predict(x_test)
     y_pred = [np.argmax(y) for y in y_pred]
     full_evaluation(y_test, y_pred)
+
+
+def lstm_model(input_length, embedding_matrix):
+    tf.keras.backend.clear_session()
+    model = Sequential()
+    model.add(Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=input_length, weights=[embedding_matrix], trainable=False))
+    model.add(SpatialDropout1D(0.2))
+    model.add(LSTM(100, dropout=0.2, recurrent_dropout=0.2))
+    model.add(Dense(4, activation='sigmoid', kernel_regularizer=regularizers.l2(0.01)))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[metrics.categorical_accuracy])
+
+    return model
+
+
+def bilstm_model(input_length, embedding_matrix):
+    tf.keras.backend.clear_session()
+    model = Sequential()
+    model.add(Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=input_length, weights=[embedding_matrix], trainable=False))
+    model.add(SpatialDropout1D(0.2))
+    model.add(Bidirectional(LSTM(100, dropout=0.2, recurrent_dropout=0.2, return_sequences=True)))
+    model.add(Attention(10))
+    model.add(Dense(4, activation='sigmoid', kernel_regularizer=regularizers.l2(0.01)))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[metrics.categorical_accuracy])
+
+    logging.info(model.summary())
+
+    return model
+
+
+def cnn_lstm_model(input_length, embedding_matrix):
+    tf.keras.backend.clear_session()
+
+    sequence_length = input_length
+    filter_sizes = [2, 3, 4, 5]
+    num_filters = 10
+    drop = 0.5
+
+    embedding_layer = Embedding(MAX_NB_WORDS, EMBEDDINGS_LEN, weights=[embedding_matrix], trainable=True)
+    inputs = Input(shape=(sequence_length,))
+    embedding = embedding_layer(inputs)
+    reshape = Reshape((sequence_length, EMBEDDINGS_LEN, 1))(embedding)
+
+    convs = []
+    maxpools = []
+
+    for filter_size in filter_sizes:
+        conv = Conv2D(num_filters, (filter_size, EMBEDDINGS_LEN), activation='relu',
+                      kernel_regularizer=regularizers.l2(0.01))(reshape)
+
+        maxpool = MaxPooling2D(
+            (sequence_length - filter_size + 1, 1), strides=(1, 1))(conv)
+
+        maxpools.append(maxpool)
+        convs.append(conv)
+
+    merged_tensor = concatenate(maxpools, axis=1)
+
+    # flatten = Flatten()(merged_tensor)
+    # reshape = Reshape((3 * num_filters,))(flatten)
+    # dropout = Dropout(drop)(flatten)
+    lstm = LSTM(100, dropout=0.2, recurrent_dropout=0.2, return_sequences=True)(merged_tensor)
+    # conc = Dense(40)(dropout)
+    output = Dense(4, activation='sigmoid',
+                   kernel_regularizer=regularizers.l2(0.01))(lstm)
+
+    # this creates a model that includes
+    cnn_model = Model(inputs, output)
+    cnn_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=[metrics.categorical_accuracy])
+
+    return cnn_model

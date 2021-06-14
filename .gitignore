@@ -1,4 +1,9 @@
 data/embeddings.zip
 data/final_dataset
 data/jec_ufsc
-.idea
+data/embeddings
+evaluation/__pycache__/
+models/__pycache__/
+utils/__pycache__/
+pre_processing/__pycache__/
+.idea/

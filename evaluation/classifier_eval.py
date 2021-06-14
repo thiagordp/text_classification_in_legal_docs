@@ -30,7 +30,7 @@ def evaluate_f_score(y_true, y_pred):
             metrics.f1_score(y_true, y_pred, average="weighted")
         ]
     except:
-        return [0, 0]
+        return [0, 0, 0]
 
 
 def confusion_matrix(y_true, y_pred):
@@ -85,3 +85,13 @@ def full_evaluation(y_true, y_pred):
     full_report = classification_report(y_true, y_pred)
 
     print(full_report)
+
+
+def evaluate_classifier(y_true, y_pred, results_dict):
+    acc = evaluate_accuracy(y_true, y_pred)
+    f1 = metrics.f1_score(y_true, y_pred, average="macro")
+    conf_mat = confusion_matrix(y_true, y_pred)
+
+    results_dict["acc"].append(acc)
+    results_dict["f1"].append(f1)
+    results_dict["conf_mat"].append(conf_mat.tolist())
