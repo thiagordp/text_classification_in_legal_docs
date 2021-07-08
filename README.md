@@ -25,7 +25,7 @@ We used the following classical ML techniques:
 
 In this subproject, we present the code of the pipeline for text classification implemented in the Python language and open-source tools, such as, [NLTK](https://www.nltk.org/), [Scikit-Learn](https://scikit-learn.org/), and [Pandas](https://pandas.pydata.org/).
 
-The following architecture were used:
+The following DL techniques were used:
 
 - LSTM
 - CNN (based on [Kim (2014)](https://arxiv.org/abs/1408.5882))
