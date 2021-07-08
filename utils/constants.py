@@ -6,10 +6,10 @@ In this file, alls the constants and files are defined
 
 # Base Paths
 # Paths for Ideapad320
-#PROJECT_PATH = "/media/trdp/Arquivos/Studies/Msc/Thesis/Experiments/Projects/text-classification_main-proj/"
-PROJECT_PATH = "/media/egov/HD_Files/Experiments/Projects/text_classification_in_legal_docs/"
-#DATASET_PATH = "/media/trdp/Arquivos/Studies/Msc/Thesis/Experiments/Datasets/"
-DATASET_PATH = "/media/egov/HD_Files/Experiments/Datasets/"
+PROJECT_PATH = "/media/trdp/Arquivos/Studies/Msc/Thesis/Experiments/Projects/text-classification_main-proj/"
+#PROJECT_PATH = "/media/egov/HD_Files/Experiments/Projects/text_classification_in_legal_docs/"
+DATASET_PATH = "/media/trdp/Arquivos/Studies/Msc/Thesis/Experiments/Datasets/"
+#DATASET_PATH = "/media/egov/HD_Files/Experiments/Datasets/"
 
 # Paths for EGOV-PC
 # PROJECT_PATH = ""
@@ -34,7 +34,8 @@ DEST_PATH_JEC_UFSC = "jec_ufsc/"
 
 # Path to Labeled Sentences
 # /media/trdp/Arquivos/Studies/Msc/Thesis/Experiments/Datasets/processos_transp_aereo/merge_sem_dispositivo
-PATH_LAB_JEC_UFSC = "processos_transp_aereo/extra_experiment/com_dispositivo/"
+# PATH_LAB_JEC_UFSC = "processos_transp_aereo/extra_experiment/com_dispositivo/"
+PATH_LAB_JEC_UFSC = "processos_transp_aereo/extra_experiment/sem_dispositivo/"
 # Path for EGOV Desktop
 # PATH_LAB_JEC_UFSC = ""
 PATH_LAB_PROC = "procedente/"

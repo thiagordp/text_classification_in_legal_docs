@@ -133,11 +133,11 @@ def process_json_results(path_results):
                       columns=["Embedding", "Technique", "Accuracy", "F1-Score",
                                "F1-P", "F1-I", "F1-E", "F1-PP",
                                "Acc-P", "Acc-I", "Acc-E", "Acc-PP"])
-    df.to_excel("data/results_full_table.xlsx", index=False)
+    df.to_excel("data/results_full_table_com_disp.xlsx", index=False)
 
     df = pd.DataFrame(results_list, columns=["Embedding", "Technique", "Accuracy",
                                              "Acc Std Dev", "F1-Score", "F1 Std Dev",
                                              "F1-P", "F1-I", "F1-E", "F1-PP",
                                              "Acc-P", "Acc-I", "Acc-E", "Acc-PP"
                                              ])
-    df.to_excel("data/results_table.xlsx", index=False)
+    df.to_excel("data/results_table_com_disp.xlsx", index=False)

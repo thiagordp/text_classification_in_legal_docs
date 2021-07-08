@@ -49,6 +49,15 @@ handler.setFormatter(formatter)
 root.addHandler(handler)
 
 
+def get_vocab(vocab, text):
+    splits = text.split()
+
+    for token in splits:
+        if token not in vocab.keys():
+            vocab[token] = 1
+        else:
+            vocab[token] += 1
+
 def get_data():
     # Load "procedentes"
     logging.info("Loading text files...")
@@ -60,6 +69,11 @@ def get_data():
         PATH_LAB_EXT: EXTINCAO,
         PATH_LAB_PARC_PROC: PARCIALMENTE_PROCEDENTE
     }
+    vocab = {
+
+    }
+    num_token_docs = []
+
 
     for path_class in dict_classes.keys():
 
@@ -80,6 +94,18 @@ def get_data():
         clean_text = text_preprocessing.clear_text(content)
         processed_text = text_preprocessing.pre_process(clean_text)
         processed_data.append([file_name, processed_text, label])
+
+        # Quantitative data
+        num_token_docs.append(len(processed_text.split()))
+        # Vocab
+        get_vocab(vocab, processed_text)
+
+    num_docs = len(num_token_docs)
+    avg_token_docs = np.sum(num_token_docs) / num_docs
+
+    print("Vocab size: ", len(vocab.keys()))
+    print("Docs:       ", num_docs)
+    print("Tok per doc:", avg_token_docs)
 
     df = pd.DataFrame(data=processed_data, columns=[
         "file_name", "content", "label"])
@@ -177,10 +203,10 @@ def train_dl():
     dict_results = {
     }
 
+    x, y = get_data()
+
     dict_load_embeddings = load_embeddings()
 
-    # Create new
-    x, y = get_data()
 
     k_splits = 10
     random_state = int(str(int((random.random() * random.random() * time.time())))[::-1]) % 2 ** 32
@@ -188,7 +214,7 @@ def train_dl():
 
     final_set = [[train_ix, test_ix] for train_ix, test_ix in kfold.split(x, y)]
 
-    for emb_model_key in dict_load_embeddings.keys():
+    for emb_model_key in tqdm.tqdm(dict_load_embeddings.keys()):
         logging.info("Training models for %s" % emb_model_key)
 
         word_vectors = dict_load_embeddings[emb_model_key]
@@ -304,13 +330,13 @@ def train_dl():
         logging.info(cross_val_dict)
         dict_results[emb_model_key] = cross_val_dict
 
-        with open("data/results_com_disp.json", "w+") as fp:
+        with open("data/results_sem_disp.json", "w+") as fp:
             json.dump(dict_results, fp, indent=4)
 
 
 def export_model_image():
-    #model = bilstm_model(1000, np.random.rand(12000, 100))
-    #model = cnn_model(1000, np.random.rand(12000, 100))
+    # model = bilstm_model(1000, np.random.rand(12000, 100))
+    # model = cnn_model(1000, np.random.rand(12000, 100))
     model = lstm_model(1000, np.random.rand(12000, 100))
     plot_model(model, to_file='model.png')
 
@@ -342,6 +368,6 @@ def old_classif():
 if __name__ == "__main__":
     # print("Text Classification")
     # print("==========================")
-    # train_dl()
-    export_model_image()
-    # process_json_results("data/results_prod_1.json")
+    train_dl()
+    #export_model_image()
+    #process_json_results("data/results_com_disp.json")
