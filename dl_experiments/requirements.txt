@@ -1,0 +1,12 @@
+pandas
+imblearn
+scikit-learn
+matplotlib
+keras-gpu
+numpy
+gensim
+attention
+tqdm
+pytesseract
+pillow
+nltk
